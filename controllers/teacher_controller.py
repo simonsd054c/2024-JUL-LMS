@@ -56,3 +56,16 @@ def create_teacher():
     except IntegrityError as err:
         if err.orig.pgcode == errorcodes.NOT_NULL_VIOLATION:
             return {"message": f"The '{err.orig.diag.column_name}' is required"}, 409
+
+
+# Delete - /teachers/id - DELETE
+@teachers_bp.route("/<int:teacher_id>", methods=["DELETE"])
+def delete_teacher(teacher_id):
+    stmt = db.select(Teacher).filter_by(id=teacher_id)
+    teacher = db.session.scalar(stmt)
+    if teacher:
+        db.session.delete(teacher)
+        db.session.commit()
+        return {"message": f"Teacher '{teacher.name}' deleted successfuly"}
+    else:
+        return {"message": f"Teacher with id {teacher_id} does not exist"}, 404
