@@ -19,9 +19,9 @@ teachers_bp = Blueprint("teachers", __name__, url_prefix="/teachers")
 def get_teachers():
     department = request.args.get("department")
     if department:
-        stmt = db.select(Teacher).filter_by(department=department)
+        stmt = db.select(Teacher).filter_by(department=department).order_by(Teacher.id)
     else:
-        stmt = db.select(Teacher)
+        stmt = db.select(Teacher).order_by(Teacher.id)
     teachers_list = db.session.scalars(stmt)
     data = teachers_schema.dump(teachers_list)
     return data
@@ -68,4 +68,28 @@ def delete_teacher(teacher_id):
         db.session.commit()
         return {"message": f"Teacher '{teacher.name}' deleted successfuly"}
     else:
+        return {"message": f"Teacher with id {teacher_id} does not exist"}, 404
+
+
+# Update - /teachers/id - PUT, PATCH
+@teachers_bp.route("/<int:teacher_id>", methods=["PUT", "PATCH"])
+def update_teacher(teacher_id):
+    # find the teacher with that id from the db
+    stmt = db.select(Teacher).filter_by(id=teacher_id)
+    teacher = db.session.scalar(stmt)
+    # get the data to be updated - receive from request body
+    body_data = request.get_json()
+    # if teacher exists
+    if teacher:
+        # update the attributes
+        teacher.name = body_data.get("name") or teacher.name
+        teacher.address = body_data.get("address") or teacher.address
+        teacher.department = body_data.get("department") or teacher.department
+        # commit
+        db.session.commit()
+        # return a response
+        return teacher_schema.dump(teacher)
+    # else
+    else:
+        # return an error response
         return {"message": f"Teacher with id {teacher_id} does not exist"}, 404
